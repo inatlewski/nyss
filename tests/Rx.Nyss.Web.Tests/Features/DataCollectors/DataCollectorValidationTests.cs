@@ -34,6 +34,7 @@ namespace RX.Nyss.Web.Tests.Features.DataCollectors
                 PhoneNumber = "+4712345678",
                 Locations = new List<DataCollectorLocationRequestDto>()
             };
+            
             var result = CreateValidator.TestValidate(command);
 
             result.ShouldHaveValidationErrorFor(dc => dc.PhoneNumber);
@@ -47,6 +48,7 @@ namespace RX.Nyss.Web.Tests.Features.DataCollectors
                 PhoneNumber = "+4712345679",
                 Locations = new List<DataCollectorLocationRequestDto>()
             };
+            
             var result = CreateValidator.TestValidate(command);
 
             result.ShouldNotHaveValidationErrorFor(dc => dc.PhoneNumber);
@@ -78,6 +80,7 @@ namespace RX.Nyss.Web.Tests.Features.DataCollectors
             {
                 Locations = new List<DataCollectorLocationRequestDto>()
             };
+            
             var result = CreateValidator.TestValidate(command);
 
             result.ShouldHaveValidationErrorFor(dc => dc.Locations);
@@ -137,6 +140,7 @@ namespace RX.Nyss.Web.Tests.Features.DataCollectors
                 PhoneNumber = "+4712345678",
                 Locations = new List<DataCollectorLocationRequestDto>()
             };
+            
             var result = EditValidator.TestValidate(command);
 
             result.ShouldHaveValidationErrorFor(x => x.PhoneNumber);
@@ -151,6 +155,7 @@ namespace RX.Nyss.Web.Tests.Features.DataCollectors
                 PhoneNumber = "+4712345678",
                 Locations = new List<DataCollectorLocationRequestDto>()
             };
+            
             var result = EditValidator.TestValidate(command);
 
             result.ShouldNotHaveValidationErrorFor(x => x.PhoneNumber);
@@ -163,6 +168,7 @@ namespace RX.Nyss.Web.Tests.Features.DataCollectors
             {
                 Locations = new List<DataCollectorLocationRequestDto>()
             };
+            
             var result = EditValidator.TestValidate(command);
 
             result.ShouldHaveValidationErrorFor(dc => dc.Locations);

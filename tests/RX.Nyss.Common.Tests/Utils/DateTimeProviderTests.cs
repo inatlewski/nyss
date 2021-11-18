@@ -8,7 +8,7 @@ namespace RX.Nyss.Common.Tests.Utils
 {
     public class DateTimeProviderTests
     {
-        public static object[][] TestData =
+        public readonly static object[][] TestData =
         {
             new object[] { new DateTime(2019, 12, 28), 52, 2019 },
             new object[] { new DateTime(2019, 12, 29), 1, 2020 },
@@ -19,7 +19,7 @@ namespace RX.Nyss.Common.Tests.Utils
             new object[] { new DateTime(2020, 1, 1), 1, 2020 }
         };
 
-        public static object[][] EpiWeekToFirstDateTestData =
+        public readonly static object[][] EpiWeekToFirstDateTestData =
         {
             new object[] { 1, 2020, new DateTime(2019, 12, 29) },
             new object[] { 15, 2020, new DateTime(2020, 4, 5) },

@@ -25,41 +25,63 @@ namespace RX.Nyss.Web.Tests.Features.NationalSocieties
         [Fact]
         public void Create_WhenCountryDoesntExists_ShouldHaveError()
         {
-            CreateValidator.ShouldHaveValidationErrorFor(ns => ns.CountryId, 1);
+            var model = new CreateNationalSocietyRequestDto { CountryId = 1};
+
+            var result = CreateValidator.TestValidate(model);
+
+            result.ShouldHaveValidationErrorFor(ns => ns.CountryId);
         }
 
         [Fact]
         public void Create_WhenContentLanguageDoesntExists_ShouldHaveError()
         {
-            CreateValidator.ShouldHaveValidationErrorFor(ns => ns.ContentLanguageId, 1);
+            var model = new CreateNationalSocietyRequestDto { ContentLanguageId = 1 };
+
+            var result = CreateValidator.TestValidate(model);
+
+            result.ShouldHaveValidationErrorFor(ns => ns.ContentLanguageId);
         }
 
         [Fact]
         public void Create_WhenNameExists_ShouldHaveError()
         {
-            CreateValidator.ShouldHaveValidationErrorFor(ns => ns.Name, "Test");
+            var model = new CreateNationalSocietyRequestDto { Name = "Test" };
+
+            var result = CreateValidator.TestValidate(model);
+
+            result.ShouldHaveValidationErrorFor(ns => ns.Name);
         }
 
         [Fact]
         public void Edit_WhenCountryDoesntExist_ShouldHaveError()
         {
-            EditValidator.ShouldHaveValidationErrorFor(ns => ns.CountryId, 1);
+            var model = new EditNationalSocietyRequestDto { CountryId = 1 };
+
+            var result = EditValidator.TestValidate(model);
+
+            result.ShouldHaveValidationErrorFor(ns => ns.CountryId);
         }
 
         [Fact]
         public void Edit_WhenContentLanguageDoesntExist_ShouldHaveError()
         {
-            EditValidator.ShouldHaveValidationErrorFor(ns => ns.ContentLanguageId, 1);
+            var model = new EditNationalSocietyRequestDto { ContentLanguageId = 1 };
+
+            var result = EditValidator.TestValidate(model);
+
+            result.ShouldHaveValidationErrorFor(ns => ns.ContentLanguageId);
         }
 
         [Fact]
         public void Edit_WhenNameExist_ShouldHaveError()
         {
-            var result = EditValidator.TestValidate(new EditNationalSocietyRequestDto
+            var model = new EditNationalSocietyRequestDto
             {
                 Name = "Test",
                 Id = 1
-            });
+            };
+
+            var result = EditValidator.TestValidate(model);
 
             result.ShouldHaveValidationErrorFor(x => x.Name);
         }

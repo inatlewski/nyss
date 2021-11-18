@@ -101,10 +101,7 @@ namespace RX.Nyss.Web.Configuration
         private static void RegisterAuth(IServiceCollection serviceCollection, ConfigSingleton.AuthenticationOptions authenticationOptions)
         {
             serviceCollection
-                .AddIdentity<IdentityUser, IdentityRole>(options =>
-                {
-                    options.Tokens.EmailConfirmationTokenProvider = "Email";
-                })
+                .AddIdentity<IdentityUser, IdentityRole>(options => options.Tokens.EmailConfirmationTokenProvider = "Email")
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders()
                 .AddEmailTokenVerificationProvider();
@@ -286,13 +283,12 @@ namespace RX.Nyss.Web.Configuration
                 .AddJsonOptions(options =>
                 {
                     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                    options.JsonSerializerOptions.IgnoreNullValues = true;
+                    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                     options.JsonSerializerOptions.Converters.Add(new JsonStringDateTimeConverter());
                 })
                 .AddFluentValidation(fv => fv.RegisterValidatorsFromAssembly(Assembly.GetExecutingAssembly(), ValidatorsFilter))
                 .ConfigureApiBehaviorOptions(options =>
-                {
                     options.InvalidModelStateResponseFactory = actionContext =>
                     {
                         var validationErrors = actionContext.ModelState.Where(v => v.Value.Errors.Count > 0)
@@ -300,8 +296,8 @@ namespace RX.Nyss.Web.Configuration
                                 stateEntry => stateEntry.Value.Errors.Select(x => x.ErrorMessage));
 
                         return new BadRequestObjectResult(Result.Error(ResultKey.Validation.ValidationError, validationErrors));
-                    };
-                });
+                    }
+                );
 
             serviceCollection.AddRazorPages();
             serviceCollection.AddHttpClient();

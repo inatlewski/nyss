@@ -60,11 +60,11 @@ namespace RX.Nyss.ReportApi.Configuration
                 {
                     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                    options.JsonSerializerOptions.IgnoreNullValues = true;
+                    options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+                    
                 })
                 .AddFluentValidation(fv => fv.RegisterValidatorsFromAssembly(Assembly.GetExecutingAssembly()))
                 .ConfigureApiBehaviorOptions(options =>
-                {
                     options.InvalidModelStateResponseFactory = actionContext =>
                     {
                         var validationErrors = actionContext.ModelState.Where(v => v.Value.Errors.Count > 0)
@@ -72,8 +72,8 @@ namespace RX.Nyss.ReportApi.Configuration
                                 stateEntry => stateEntry.Value.Errors.Select(x => x.ErrorMessage));
 
                         return new BadRequestObjectResult(validationErrors);
-                    };
-                });
+                    }
+                );
 
             serviceCollection.AddHttpClient();
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace RX.Nyss.FuncApp.Services
@@ -26,7 +27,7 @@ namespace RX.Nyss.FuncApp.Services
             var payload = JsonSerializer.Serialize(body, options: new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                IgnoreNullValues = true
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             });
 
             var httpClient = _httpClientFactory.CreateClient();

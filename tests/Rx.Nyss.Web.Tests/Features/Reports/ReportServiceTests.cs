@@ -719,10 +719,7 @@ namespace RX.Nyss.Web.Tests.Features.Reports
             }).ToList();
 
         private static void LinkUnknownRawReportsToReports(List<Report> reports, List<RawReport> rawReports) =>
-            reports.ForEach(r =>
-            {
-                r.RawReport = rawReports.First(rr => rr.ReportId == r.Id);
-            });
+            reports.ForEach(r => r.RawReport = rawReports.First(rr => rr.ReportId == r.Id));
 
         private static Point GetMockPoint(double lat, double lon) =>
             new MockPoint(lon, lat);

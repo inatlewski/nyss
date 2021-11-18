@@ -22,36 +22,115 @@ namespace RX.Nyss.Web.Tests.Features.SmsGateway
         }
 
         [Fact]
-        public void Create_WhenApiExists_ShouldHaveError() => _createValidator.ShouldHaveValidationErrorFor(gs => gs.ApiKey, "1234");
-
-        [Fact]
-        public void Create_WhenEmailIsNullAndIotHubDeviceNameIsNull_ShouldHaveError() => _createValidator.ShouldHaveValidationErrorFor(gs => gs.IotHubDeviceName, null as string);
-
-        [Fact]
-        public void Create_WhenIotHubDeviceNameIsSetAndEmailIsNull_ShouldNotHaveError() => _createValidator.ShouldNotHaveValidationErrorFor(gs => gs.IotHubDeviceName, "iothub");
-
-        [Fact]
-        public void Create_WhenIotHubDeviceNameIsNullAndEmailIsSet_ShouldNotHaveError() => _createValidator.ShouldNotHaveValidationErrorFor(gs => gs.EmailAddress, "test@example.com");
-
-        [Fact]
-        public void Edit_WhenApiExistsToOther_ShouldHaveError()
+        public void Create_WhenApiExists_ShouldHaveError()
         {
-            var result = _editValidator.TestValidate(new EditGatewaySettingRequestDto
+            var model = new CreateGatewaySettingRequestDto
             {
                 Id = 1,
                 ApiKey = "1234"
-            });
+            };
+
+            var result = _createValidator.TestValidate(model);
 
             result.ShouldHaveValidationErrorFor(gs => gs.ApiKey);
         }
 
         [Fact]
-        public void Edit_WhenEmailIsNullAndIotHubDeviceNameIsNull_ShouldHaveError() => _editValidator.ShouldHaveValidationErrorFor(gs => gs.IotHubDeviceName, null as string);
+        public void Create_WhenEmailIsNullAndIotHubDeviceNameIsNull_ShouldHaveError()
+        {
+            var model = new CreateGatewaySettingRequestDto
+            {
+                Id = 1,
+                IotHubDeviceName = null
+            };
+
+            var result = _createValidator.TestValidate(model);
+
+            result.ShouldHaveValidationErrorFor(gs => gs.IotHubDeviceName);
+        }
 
         [Fact]
-        public void Edit_WhenIotHubDeviceNameIsSetAndEmailIsNull_ShouldNotHaveError() => _editValidator.ShouldNotHaveValidationErrorFor(gs => gs.IotHubDeviceName, "iothub");
+        public void Create_WhenIotHubDeviceNameIsSetAndEmailIsNull_ShouldNotHaveError()
+        {
+            var model = new CreateGatewaySettingRequestDto
+            {
+                Id = 1,
+                IotHubDeviceName = "iothub"
+            };
+
+            var result = _createValidator.TestValidate(model);
+
+            result.ShouldNotHaveValidationErrorFor(gs => gs.IotHubDeviceName);
+        }
 
         [Fact]
-        public void Edit_WhenIotHubDeviceNameIsNullAndEmailIsSet_ShouldNotHaveError() => _editValidator.ShouldNotHaveValidationErrorFor(gs => gs.EmailAddress, "test@example.com");
+        public void Create_WhenIotHubDeviceNameIsNullAndEmailIsSet_ShouldNotHaveError()
+        {
+            var model = new CreateGatewaySettingRequestDto
+            {
+                Id = 1,
+                EmailAddress = "test@example.com"
+            };
+
+            var result = _createValidator.TestValidate(model);
+
+            result.ShouldNotHaveValidationErrorFor(gs => gs.EmailAddress);
+        }
+
+        [Fact]
+        public void Edit_WhenApiExistsToOther_ShouldHaveError()
+        {
+            var model = new EditGatewaySettingRequestDto
+            {
+                Id = 1,
+                ApiKey = "1234"
+            };
+
+            var result = _editValidator.TestValidate(model);
+
+            result.ShouldHaveValidationErrorFor(gs => gs.ApiKey);
+        }
+
+        [Fact]
+        public void Edit_WhenEmailIsNullAndIotHubDeviceNameIsNull_ShouldHaveError()
+        {
+            var model = new EditGatewaySettingRequestDto
+            {
+                Id = 1,
+                IotHubDeviceName = null
+            };
+
+            var result = _editValidator.TestValidate(model);
+
+            result.ShouldHaveValidationErrorFor(gs => gs.IotHubDeviceName);
+        }
+
+        [Fact]
+        public void Edit_WhenIotHubDeviceNameIsSetAndEmailIsNull_ShouldNotHaveError()
+        {
+            var model = new EditGatewaySettingRequestDto
+            {
+                Id = 1,
+                IotHubDeviceName = "iothub"
+            };
+
+            var result = _editValidator.TestValidate(model);
+
+            result.ShouldNotHaveValidationErrorFor(gs => gs.IotHubDeviceName);
+        }
+
+        [Fact]
+        public void Edit_WhenIotHubDeviceNameIsNullAndEmailIsSet_ShouldNotHaveError()
+        {
+            var model = new EditGatewaySettingRequestDto
+            {
+                Id = 1,
+                EmailAddress = "test@example.com"
+            };
+
+            var result = _editValidator.TestValidate(model);
+
+            result.ShouldNotHaveValidationErrorFor(gs => gs.EmailAddress);
+        }
     }
 }

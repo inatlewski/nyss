@@ -499,12 +499,7 @@ namespace RX.Nyss.Web.Features.Reports
                 .SingleOrDefaultAsync(phr => phr.HealthRiskId == projectHealthRiskId
                     && phr.Project.Id == projectId);
 
-            if (projectHealthRisk == null)
-            {
-                throw new ResultException(ResultKey.Report.Edit.HealthRiskNotAssignedToProject);
-            }
-
-            report.ProjectHealthRisk = projectHealthRisk;
+            report.ProjectHealthRisk = projectHealthRisk ?? throw new ResultException(ResultKey.Report.Edit.HealthRiskNotAssignedToProject);
         }
 
         private static bool LocationNeedsUpdate(Report report, ReportRequestDto reportRequestDto, List<DataCollectorLocation> dataCollectorLocations)
