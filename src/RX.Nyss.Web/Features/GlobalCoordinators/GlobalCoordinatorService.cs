@@ -56,8 +56,9 @@ namespace RX.Nyss.Web.Features.GlobalCoordinators
                     var identityUser = await _identityUserRegistrationService.CreateIdentityUser(dto.Email, Role.GlobalCoordinator);
                     securityStamp = await _identityUserRegistrationService.GenerateEmailVerification(identityUser.Email);
 
-                    var defaultUserApplicationLanguage = await _dataContext.ApplicationLanguages
-                        .SingleOrDefaultAsync(al => al.LanguageCode == EnglishLanguageCode);
+                    // Oponeo: get ApplicationLanguage by LanguageCode equals EnglishLanguageCode
+                    // Make sure database returned zero or one row
+                    ApplicationLanguage defaultUserApplicationLanguage = null;
 
                     user = new GlobalCoordinatorUser
                     {
@@ -70,9 +71,9 @@ namespace RX.Nyss.Web.Features.GlobalCoordinators
                         Role = Role.GlobalCoordinator,
                         ApplicationLanguage = defaultUserApplicationLanguage
                     };
-                    await _dataContext.AddAsync(user);
 
-                    await _dataContext.SaveChangesAsync();
+                    // Oponeo: add a user and save changes
+
                     transactionScope.Complete();
                 }
 
@@ -89,8 +90,10 @@ namespace RX.Nyss.Web.Features.GlobalCoordinators
 
         public async Task<Result> Edit(EditGlobalCoordinatorRequestDto dto)
         {
-            var globalCoordinator = await _dataContext.Users.FilterAvailable()
-                .SingleOrDefaultAsync(u => u.Id == dto.Id && u.Role == Role.GlobalCoordinator);
+            // Oponeo: Get Users
+            // Apply extension method FilterAvailable() that gets only not-deleted users
+            // Make sure database returned zero or one row filtering by user id and Role GlobalCoordinator
+            User globalCoordinator = null;
 
             if (globalCoordinator == null)
             {
@@ -98,29 +101,20 @@ namespace RX.Nyss.Web.Features.GlobalCoordinators
                 return Error(ResultKey.User.Common.UserNotFound);
             }
 
-            globalCoordinator.Name = dto.Name;
-            globalCoordinator.PhoneNumber = dto.PhoneNumber;
-            globalCoordinator.AdditionalPhoneNumber = dto.AdditionalPhoneNumber;
-            globalCoordinator.Organization = dto.Organization;
+            // Oponeo: Set properties Name, PhoneNumber, AdditionalPhoneNumber, Organization and save changes
 
-            await _dataContext.SaveChangesAsync();
             return Success();
         }
 
         public async Task<Result<GetGlobalCoordinatorResponseDto>> Get(int id)
         {
-            var globalCoordinator = await _dataContext.Users.FilterAvailable()
-                .Where(u => u.Id == id && u.Role == Role.GlobalCoordinator)
-                .Select(u => new GetGlobalCoordinatorResponseDto
-                {
-                    Id = u.Id,
-                    Name = u.Name,
-                    Email = u.EmailAddress,
-                    PhoneNumber = u.PhoneNumber,
-                    AdditionalPhoneNumber = u.AdditionalPhoneNumber,
-                    Organization = u.Organization
-                })
-                .SingleOrDefaultAsync();
+            // Oponeo: Get Users
+            // Apply extension method FilterAvailable() that gets only not-deleted users
+            // Filter by user id and Role GlobalCoordinator
+            // Select a new object of type GetGlobalCoordinatorResponseDto with the following properties:
+            //      Id, Name, Email, PhoneNumber, AdditionalPhoneNumber, Organization
+            // Make sure database returned zero or one row
+            GetGlobalCoordinatorResponseDto globalCoordinator = null;
 
             if (globalCoordinator == null)
             {
@@ -133,19 +127,14 @@ namespace RX.Nyss.Web.Features.GlobalCoordinators
 
         public async Task<Result<List<GetGlobalCoordinatorResponseDto>>> List()
         {
-            var globalCoordinators = await _dataContext.Users.FilterAvailable()
-                .Where(u => u.Role == Role.GlobalCoordinator)
-                .Select(u => new GetGlobalCoordinatorResponseDto
-                {
-                    Id = u.Id,
-                    Name = u.Name,
-                    Email = u.EmailAddress,
-                    PhoneNumber = u.PhoneNumber,
-                    AdditionalPhoneNumber = u.AdditionalPhoneNumber,
-                    Organization = u.Organization
-                })
-                .OrderBy(gc => gc.Name)
-                .ToListAsync();
+            // Oponeo: Get Users
+            // Apply extension method FilterAvailable() that gets only not-deleted users
+            // Filter by Role GlobalCoordinator
+            // Select a new object of type GetGlobalCoordinatorResponseDto with the following properties:
+            //      Id, Name, Email, PhoneNumber, AdditionalPhoneNumber, Organization
+            // Order by Name
+            // List query
+            var globalCoordinators = new List<GetGlobalCoordinatorResponseDto>();
 
             return Success(globalCoordinators);
         }
@@ -156,7 +145,10 @@ namespace RX.Nyss.Web.Features.GlobalCoordinators
             {
                 using (var transactionScope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
                 {
-                    var globalCoordinator = await _dataContext.Users.FilterAvailable().FirstOrDefaultAsync(u => u.Id == id);
+                    // Oponeo: Get Users
+                    // Apply extension method FilterAvailable() that gets only not-deleted users
+                    // Get first row or null base on id
+                    User globalCoordinator = null;
 
                     if (globalCoordinator == null)
                     {
@@ -166,8 +158,7 @@ namespace RX.Nyss.Web.Features.GlobalCoordinators
 
                     await _deleteUserService.EnsureCanDeleteUser(id, Role.GlobalCoordinator);
 
-                    _dataContext.Users.Remove(globalCoordinator);
-                    await _dataContext.SaveChangesAsync();
+                    // Oponeo: Remove globalCoordinator from Users table and save changes
 
                     await _identityUserRegistrationService.DeleteIdentityUser(globalCoordinator.IdentityUserId);
 
