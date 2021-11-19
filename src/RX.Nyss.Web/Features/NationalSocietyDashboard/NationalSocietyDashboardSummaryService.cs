@@ -47,25 +47,20 @@ namespace RX.Nyss.Web.Features.NationalSocietyDashboard
             var dashboardReports = _reportService.GetDashboardHealthRiskEventReportsQuery(filters);
             var rawReportsWithDataCollector = _reportService.GetRawReportsWithDataCollectorQuery(filters);
 
-            return await _nyssContext.NationalSocieties
-                .Where(ns => ns.Id == nationalSocietyId)
-                .Select(ns => new
-                {
-                    activeDataCollectorCount = rawReportsWithDataCollector.Select(r => r.DataCollector.Id).Distinct().Count()
-                })
-                .Select(data => new NationalSocietySummaryResponseDto
-                {
-                    KeptReportCount = dashboardReports.Where(r => r.Status == ReportStatus.Accepted).Sum(r => r.ReportedCaseCount),
-                    DismissedReportCount = dashboardReports.Where(r => r.Status == ReportStatus.Rejected).Sum(r => r.ReportedCaseCount),
-                    NotCrossCheckedReportCount = dashboardReports.Where(r => r.Status == ReportStatus.New || r.Status == ReportStatus.Pending || r.Status == ReportStatus.Closed).Sum(r => r.ReportedCaseCount),
-                    TotalReportCount = dashboardReports.Sum(r => r.ReportedCaseCount),
-                    ActiveDataCollectorCount = data.activeDataCollectorCount,
-                    DataCollectionPointSummary = _reportsDashboardSummaryService.DataCollectionPointsSummary(dashboardReports),
-                    AlertsSummary = _reportsDashboardSummaryService.AlertsSummary(filters),
-                    NumberOfDistricts = rawReportsWithDataCollector.Select(r => r.Village.District).Distinct().Count(),
-                    NumberOfVillages = rawReportsWithDataCollector.Select(r => r.Village).Distinct().Count()
-                })
-                .FirstOrDefaultAsync();
+            // Oponeo: Get NationalSociety by id
+            // Select a new anonymous object with property activeDataCollectorCount that counts unique Id of DataCollectors using a query rawReportsWithDataCollector
+            // Then select a new object of type NationalSocietySummaryResponseDto with the following properties:
+            //      KeptReportCount - sum of ReportedCaseCount with report status Accepted using a query dashboardReports
+            //      DismissedReportCount - sum of ReportedCaseCount with report status Rejected using a query dashboardReports
+            //      NotCrossCheckedReportCount - sum of ReportedCaseCount with report status New, Pending or Closed using a query dashboardReports
+            //      TotalReportCount - sum of all ReportedCaseCount using a query dashboardReports
+            //      ActiveDataCollectorCount
+            //      DataCollectionPointSummary - use a query provided by _reportsDashboardSummaryService.DataCollectionPointsSummary with a parameter dashboardReports
+            //      AlertsSummary - use a query provided by _reportsDashboardSummaryService.AlertsSummary with a parameter filters
+            //      NumberOfDistricts - count a unique Village District using a query rawReportsWithDataCollector
+            //      NumberOfVillages - count a unique Village using a query rawReportsWithDataCollector
+            // Return first row from the database or null
+            return null;
         }
     }
 }
