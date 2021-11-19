@@ -48,23 +48,13 @@ namespace RX.Nyss.Web.Features.SmsGateways
 
         public async Task<Result<GatewaySettingResponseDto>> Get(int smsGatewayId)
         {
-            var gatewaySetting = await _nyssContext.GatewaySettings
-                .Select(gs => new GatewaySettingResponseDto
-                {
-                    Id = gs.Id,
-                    Name = gs.Name,
-                    ApiKey = gs.ApiKey,
-                    GatewayType = gs.GatewayType,
-                    EmailAddress = gs.EmailAddress,
-                    IotHubDeviceName = gs.IotHubDeviceName,
-                    ModemOneName = gs.Modems != null && gs.Modems.Any(gm => gm.ModemId == 1)
-                        ? gs.Modems.First(gm => gm.ModemId == 1).Name
-                        : null,
-                    ModemTwoName = gs.Modems != null && gs.Modems.Any(gm => gm.ModemId == 2)
-                        ? gs.Modems.First(gm => gm.ModemId == 2).Name
-                        : null
-                })
-                .FirstOrDefaultAsync(gs => gs.Id == smsGatewayId);
+            // Oponeo: Get GatewaySettings
+            // Select a new object of type GatewaySettingResponseDto with the following properties:
+            //      Id, Name, ApiKey, GatewayType, EmailAddress, IotHubDeviceName
+            //      ModemOneName - if Modems collection is not null and any element in Modems collection has ModemId == 1, then use Name property of such element
+            //      ModemTwoName - if Modems collection is not null and any element in Modems collection has ModemId == 2, then use Name property of such element
+            // Get first or default row base on Id equals smsGatewayId
+            GatewaySettingResponseDto gatewaySetting = null;
 
             if (gatewaySetting == null)
             {
@@ -78,18 +68,12 @@ namespace RX.Nyss.Web.Features.SmsGateways
 
         public async Task<Result<List<GatewaySettingResponseDto>>> List(int nationalSocietyId)
         {
-            var gatewaySettings = await _nyssContext.GatewaySettings
-                .Where(gs => gs.NationalSocietyId == nationalSocietyId)
-                .OrderBy(gs => gs.Id)
-                .Select(gs => new GatewaySettingResponseDto
-                {
-                    Id = gs.Id,
-                    Name = gs.Name,
-                    ApiKey = gs.ApiKey,
-                    GatewayType = gs.GatewayType,
-                    IotHubDeviceName = gs.IotHubDeviceName
-                })
-                .ToListAsync();
+            // Oponeo: Get a list of GatewaySettings
+            // Filter by nationalSocietyId
+            // Order by Id
+            // Select a new object of type GatewaySettingResponseDto with the following properties:
+            //      Id, Name, ApiKey, GatewayType, IotHubDeviceName
+            var gatewaySettings = new List<GatewaySettingResponseDto>();
 
             var result = Success(gatewaySettings);
 
@@ -100,7 +84,8 @@ namespace RX.Nyss.Web.Features.SmsGateways
         {
             try
             {
-                if (!await _nyssContext.NationalSocieties.AnyAsync(ns => ns.Id == nationalSocietyId))
+                // Oponeo: Make sure in the database there is NationalSociety with id from a parameter 
+                if (true)
                 {
                     return Error<int>(ResultKey.NationalSociety.SmsGateway.NationalSocietyDoesNotExist);
                 }
@@ -117,9 +102,9 @@ namespace RX.Nyss.Web.Features.SmsGateways
 
                 AttachGatewayModems(gatewaySettingToAdd, editGatewaySettingRequestDto);
 
-                await _nyssContext.GatewaySettings.AddAsync(gatewaySettingToAdd);
-                await _nyssContext.SaveChangesAsync();
+                // Oponeo: add gatewaySettingToAdd to GatewaySettings table and save changes
 
+                // Oponeo: fix UpdateAuthorizedApiKeys() method
                 await UpdateAuthorizedApiKeys();
 
                 return Success(gatewaySettingToAdd.Id, ResultKey.NationalSociety.SmsGateway.SuccessfullyAdded);
@@ -135,9 +120,10 @@ namespace RX.Nyss.Web.Features.SmsGateways
         {
             try
             {
-                var gatewaySettingToUpdate = await _nyssContext.GatewaySettings
-                    .Include(x => x.Modems)
-                    .SingleOrDefaultAsync(x => x.Id == smsGatewayId);
+                // Oponeo: Get GatewaySetting to be updated base on id
+                // Include information about Modems
+                // Make sure database returned zero or one row
+                GatewaySetting gatewaySettingToUpdate = null;
 
                 if (gatewaySettingToUpdate == null)
                 {
@@ -150,9 +136,11 @@ namespace RX.Nyss.Web.Features.SmsGateways
                 gatewaySettingToUpdate.EmailAddress = editGatewaySettingRequestDto.EmailAddress;
                 gatewaySettingToUpdate.IotHubDeviceName = editGatewaySettingRequestDto.IotHubDeviceName;
 
+                // Oponeo: fix the methods inside EditGatewayModems()
                 EditGatewayModems(gatewaySettingToUpdate, editGatewaySettingRequestDto);
 
-                await _nyssContext.SaveChangesAsync();
+                // Oponeo: save changes
+
                 await UpdateAuthorizedApiKeys();
 
                 return SuccessMessage(ResultKey.NationalSociety.SmsGateway.SuccessfullyUpdated);
@@ -168,9 +156,10 @@ namespace RX.Nyss.Web.Features.SmsGateways
         {
             try
             {
-                var gatewaySettingToDelete = await _nyssContext.GatewaySettings
-                    .Include(gs => gs.Modems)
-                    .SingleOrDefaultAsync(gs => gs.Id == smsGatewayId);
+                // Oponeo: Get a GatewaySetting to be deleted base on id
+                // Include information about Modems
+                // Make sure database returned zero or one row
+                GatewaySetting gatewaySettingToDelete = null;
 
                 if (gatewaySettingToDelete == null)
                 {
@@ -181,6 +170,7 @@ namespace RX.Nyss.Web.Features.SmsGateways
 
                 if (modems.Any())
                 {
+                    // Oponeo: fix the following methods
                     RemoveManagerModemReferences(modems);
                     RemoveSupervisorModemReferences(modems);
                     RemoveHeadSupervisorModemReferences(modems);
@@ -188,9 +178,7 @@ namespace RX.Nyss.Web.Features.SmsGateways
                     RemoveAlertRecipientModemsReferences(modems);
                 }
 
-                _nyssContext.GatewaySettings.Remove(gatewaySettingToDelete);
-
-                await _nyssContext.SaveChangesAsync();
+                // Oponeo: remove gatewaySettingToDelete from GatewaySettings table and save changes
 
                 await UpdateAuthorizedApiKeys();
 
@@ -205,11 +193,11 @@ namespace RX.Nyss.Web.Features.SmsGateways
 
         public async Task UpdateAuthorizedApiKeys()
         {
-            var authorizedApiKeys = await _nyssContext.GatewaySettings
-                .OrderBy(gs => gs.NationalSocietyId)
-                .ThenBy(gs => gs.Id)
-                .Select(gs => gs.ApiKey)
-                .ToListAsync();
+            // Oponeo: Get GatewaySettings
+            // Ordered by NationalSocietyId and then Id
+            // Select ApiKey
+            // List the query
+            var authorizedApiKeys = new List<string>();
 
             var blobContentToUpload = string.Join(Environment.NewLine, authorizedApiKeys);
             await _smsGatewayBlobProvider.UpdateApiKeys(blobContentToUpload);
@@ -217,7 +205,8 @@ namespace RX.Nyss.Web.Features.SmsGateways
 
         public async Task<Result> GetIotHubConnectionString(int smsGatewayId)
         {
-            var gatewayDevice = await _nyssContext.GatewaySettings.FindAsync(smsGatewayId);
+            // Oponeo: Find GatewaySettings by smsGatewayId
+            GatewaySetting gatewayDevice = null;
 
             if (string.IsNullOrEmpty(gatewayDevice?.IotHubDeviceName))
             {
@@ -233,10 +222,11 @@ namespace RX.Nyss.Web.Features.SmsGateways
         {
             var allDevices = await _iotHubService.ListDevices();
 
-            var takenDevices = await _nyssContext.GatewaySettings
-                .Where(sg => !string.IsNullOrEmpty(sg.IotHubDeviceName))
-                .Select(sg => sg.IotHubDeviceName)
-                .ToListAsync();
+            // Oponeo: Get GatewaySettings
+            // Filter out rows with IotHubDeviceName that is null or whitespace
+            // Select IotHubDeviceName
+            // List the query
+            var takenDevices = new List<string>();
 
             var availableDevices = allDevices.Except(takenDevices);
 
@@ -283,24 +273,26 @@ namespace RX.Nyss.Web.Features.SmsGateways
 
                 if (modemsToRemove.Any())
                 {
+                    // Oponeo: fix the following methods:
                     RemoveAlertRecipientModemsReferences(modemsToRemove);
                     RemoveManagerModemReferences(modemsToRemove);
                     RemoveSupervisorModemReferences(modemsToRemove);
                     RemoveHeadSupervisorModemReferences(modemsToRemove);
                     RemoveTechnicalAdvisorModemReferences(modemsToRemove);
 
-                    _nyssContext.GatewayModems.RemoveRange(modemsToRemove);
+                    // Oponeo: remove modemsToRemove from GatewayModems table
                 }
             }
         }
 
         private void RemoveManagerModemReferences(List<GatewayModem> gatewayModems)
         {
-            var managersConnectedToModems = _nyssContext.Users
-                .Where(u => u.Role == Role.Manager)
-                .Select(u => (ManagerUser)u)
-                .Where(mu => gatewayModems.Contains(mu.Modem))
-                .ToList();
+            // Oponeo: Get users
+            // With Role.Manager
+            // Select and cast to ManagerUser
+            // Get only managers that have Modem from gatewayModems
+            // List the query
+            var managersConnectedToModems = new List<ManagerUser>();
 
             foreach (var manager in managersConnectedToModems)
             {
@@ -310,11 +302,12 @@ namespace RX.Nyss.Web.Features.SmsGateways
 
         private void RemoveSupervisorModemReferences(List<GatewayModem> gatewayModems)
         {
-            var supervisorsConnectedToModems = _nyssContext.Users
-                .Where(u => u.Role == Role.Supervisor)
-                .Select(u => (SupervisorUser)u)
-                .Where(su => gatewayModems.Contains(su.Modem))
-                .ToList();
+            // Oponeo: Get users
+            // With Role.Supervisor
+            // Select and cast to SupervisorUser
+            // Get only managers that have Modem from gatewayModems
+            // List the query
+            var supervisorsConnectedToModems = new List<SupervisorUser>();
 
             foreach (var supervisor in supervisorsConnectedToModems)
             {
@@ -324,36 +317,35 @@ namespace RX.Nyss.Web.Features.SmsGateways
 
         private void RemoveHeadSupervisorModemReferences(List<GatewayModem> gatewayModems)
         {
-            var headSupervisorsConnectedToModems = _nyssContext.Users
-                .Where(u => u.Role == Role.HeadSupervisor)
-                .Select(u => (HeadSupervisorUser)u)
-                .Where(hsu => gatewayModems.Contains(hsu.Modem))
-                .ToList();
+            // Oponeo: Get users
+            // With Role.HeadSupervisor
+            // Select and cast to HeadSupervisorUser
+            // Get only managers that have Modem from gatewayModems
+            // List the query
+            var headSupervisorsConnectedToModems = new List<HeadSupervisorUser>();
 
             foreach (var headSupervisor in headSupervisorsConnectedToModems)
             {
-                headSupervisor.Modem = null;
+                // Oponeo: unlink (set to null) Modem from headSupervisor
             }
         }
 
         private void RemoveTechnicalAdvisorModemReferences(List<GatewayModem> gatewayModems)
         {
-            var technicalAdvisorModemsToRemove = _nyssContext.TechnicalAdvisorUserGatewayModems
-                .Where(tam => gatewayModems.Contains(tam.GatewayModem))
-                .ToList();
+            // Get TechnicalAdvisorUserGatewayModems that contains gatewayModems
+            var technicalAdvisorModemsToRemove = new List<TechnicalAdvisorUserGatewayModem>();
 
-            _nyssContext.TechnicalAdvisorUserGatewayModems.RemoveRange(technicalAdvisorModemsToRemove);
+            // Oponeo: remove technicalAdvisorModemsToRemove from TechnicalAdvisorUserGatewayModems table
         }
 
         private void RemoveAlertRecipientModemsReferences(List<GatewayModem> gatewayModems)
         {
-            var alertRecipientsConnectedToModem = _nyssContext.AlertNotificationRecipients
-                .Where(anr => gatewayModems.Contains(anr.GatewayModem))
-                .ToList();
+            // Oponeo: Get AlertNotificationRecipients that contains gatewayModems
+            var alertRecipientsConnectedToModem = new List<AlertNotificationRecipient>();
 
             foreach (var alertRecipient in alertRecipientsConnectedToModem)
             {
-                alertRecipient.GatewayModem = null;
+                // Oponeo: unlink (set to null) GatewayModem from alertRecipient
             }
         }
     }
