@@ -55,32 +55,22 @@ namespace RX.Nyss.Web.Features.NationalSocieties
 
         public async Task<Result<List<NationalSocietyListResponseDto>>> List()
         {
-            var list = await GetNationalSocietiesQuery()
-                .Include(x => x.DefaultOrganization.HeadManager)
-                .Include(x => x.DefaultOrganization.PendingHeadManager)
-                .Select(n => new NationalSocietyListResponseDto
-                {
-                    Id = n.Id,
-                    ContentLanguage = n.ContentLanguage.DisplayName,
-                    Name = n.Name,
-                    Country = n.Country.Name,
-                    StartDate = n.StartDate,
-                    HeadManagers = string.Join(", ", n.Organizations
-                        .Where(o => o.HeadManager != null)
-                        .Select(o => o.HeadManager.Name)
-                        .ToList()),
-                    TechnicalAdvisor = string.Join(", ", n.NationalSocietyUsers
-                        .Where(u => u.User.Role == Role.TechnicalAdvisor)
-                        .Select(u => u.User.Name)
-                        .ToList()),
-                    Coordinators = string.Join(", ", n.NationalSocietyUsers
-                        .Where(nsu => nsu.User.Role == Role.Coordinator)
-                        .Select(nsu => nsu.User.Name)
-                        .ToList()),
-                    IsArchived = n.IsArchived
-                })
-                .OrderBy(n => n.Name)
-                .ToListAsync();
+            // Oponeo: fix GetNationalSocietiesQuery()
+            // Include information about HeadManager in DefaultOrganization of national society
+            // Include information about PendingHeadManager in DefaultOrganization of national society
+            // Select a new object of type NationalSocietyListResponseDto with the following properties:
+            //      Id
+            //      ContentLanguage - DisplayName of ContentLanguage
+            //      Name
+            //      Country - Name of Country
+            //      StartDate
+            //      IsArchived
+            //      HeadManagers - string that contains Names of HeadManagers available in Organizations (if HeadManager is not null), separated by ","
+            //      TechnicalAdvisor - string that contains Names of Users with Role TechnicalAdvisor available in NationalSocietyUsers, separated by ","
+            //      Coordinator - string that contains Names of Users with Role Coordinator available in NationalSocietyUsers, separated by ","
+            // Order everything by Name of the national society
+            // List the query
+            var list = new List<NationalSocietyListResponseDto>();
 
             return Success(list);
         }
@@ -89,20 +79,19 @@ namespace RX.Nyss.Web.Features.NationalSocieties
         {
             var currentUserName = _authorizationService.GetCurrentUserName();
 
-            var nationalSociety = await _nyssContext.NationalSocieties
-                .Select(n => new NationalSocietyResponseDto
-                {
-                    Id = n.Id,
-                    ContentLanguageId = n.ContentLanguage.Id,
-                    ContentLanguageName = n.ContentLanguage.DisplayName,
-                    Name = n.Name,
-                    CountryId = n.Country.Id,
-                    CountryName = n.Country.Name,
-                    IsCurrentUserHeadManager = n.Organizations.Any(o => o.HeadManager.EmailAddress == currentUserName),
-                    IsArchived = n.IsArchived,
-                    HasCoordinator = n.NationalSocietyUsers.Any(nsu => nsu.User.Role == Role.Coordinator)
-                })
-                .FirstOrDefaultAsync(n => n.Id == id);
+            // Oponeo: Get NationalSociety
+            // Select a new object of type NationalSocietyResponseDto wit the following properties:
+            //      Id
+            //      ContentLanguageId
+            //      ContentLanguageName - DisplayName of ContentLanguage
+            //      Name
+            //      CountryId
+            //      CountryName
+            //      IsCurrentUserHeadManager - a flag that indicates if in the Organizations of the national society there is any with HeadManager with EmailAddress equals currentUserName
+            //      IsArchived
+            //      HasCoordinator - a flag that indicates if in the NationalSocietyUsers there is any user with Role Coordinator
+            // Return first row or null base on id
+            NationalSocietyResponseDto nationalSociety = null;
 
             return nationalSociety != null
                 ? Success(nationalSociety)
@@ -111,6 +100,7 @@ namespace RX.Nyss.Web.Features.NationalSocieties
 
         public async Task<Result> Create(CreateNationalSocietyRequestDto dto)
         {
+            // Oponeo: fix GetLanguageById() and GetCountryById() methods
             var nationalSociety = new NationalSociety
             {
                 Name = dto.Name,
@@ -120,16 +110,12 @@ namespace RX.Nyss.Web.Features.NationalSocieties
                 StartDate = DateTime.UtcNow
             };
 
-            await _nyssContext.AddAsync(nationalSociety);
-            await _nyssContext.SaveChangesAsync();
+            // Oponeo: Add nationalSociety and save changes
 
-            nationalSociety.DefaultOrganization = new Organization
-            {
-                Name = dto.InitialOrganizationName,
-                NationalSociety = nationalSociety
-            };
-
-            await _nyssContext.SaveChangesAsync();
+            // Oponeo: Set DefaultOrganization of national society as a new object of type Organization with the following parameters:
+            //      dto.InitialOrganizationName as Name
+            //      nationalSociety as NationalSociety
+            // Save changes
 
             _loggerAdapter.Info($"A national society {nationalSociety} was created");
             return Success(nationalSociety.Id);
@@ -139,19 +125,18 @@ namespace RX.Nyss.Web.Features.NationalSocieties
         {
             var currentUser = await _authorizationService.GetCurrentUser();
 
-            var nationalSocietyData = await _nyssContext.NationalSocieties
-                .Where(n => n.Id == nationalSocietyId)
-                .Select(ns => new
+            // Oponeo: Get NationalSocieties base on nationalSocietyId
+            // Select anonymous object with the following properties:
+            //      NationalSociety,
+            //      CurrentUserOrganizationId - NationalSocietyUsers where User is currentUser and select zero or one OrganizationId
+            //      HasCoordinator - a flag that indicates if NationalSocietyUsers collection contains any User with Role Role.Coordinator
+            // Make sure database returned exactly one row
+            var nationalSocietyData = new
                 {
-                    NationalSociety = ns,
-                    CurrentUserOrganizationId = ns.NationalSocietyUsers
-                        .Where(uns => uns.User == currentUser)
-                        .Select(uns => uns.OrganizationId)
-                        .SingleOrDefault(),
-                    HasCoordinator = ns.NationalSocietyUsers
-                        .Any(uns => uns.User.Role == Role.Coordinator)
-                })
-                .SingleAsync();
+                    NationalSociety = (NationalSociety)null,
+                    CurrentUserOrganizationId = 0,
+                    HasCoordinator = false
+                };
 
             var nationalSociety = nationalSocietyData.NationalSociety;
 
@@ -166,48 +151,52 @@ namespace RX.Nyss.Web.Features.NationalSocieties
             }
 
             nationalSociety.Name = dto.Name;
+            // Oponeo: fix GetLanguageById() and GetCountryById() methods
             nationalSociety.ContentLanguage = await GetLanguageById(dto.ContentLanguageId);
             nationalSociety.Country = await GetCountryById(dto.CountryId);
 
-            await _nyssContext.SaveChangesAsync();
+            // Oponeo: save changes
 
             return SuccessMessage(ResultKey.NationalSociety.Edit.Success);
         }
 
         public async Task<IEnumerable<HealthRiskDto>> GetHealthRiskNames(int nationalSocietyId, bool excludeActivity) =>
-            await _nyssContext.ProjectHealthRisks
-                .Where(ph => ph.Project.NationalSocietyId == nationalSocietyId)
-                .Where(ph => !excludeActivity || ph.HealthRisk.HealthRiskType != HealthRiskType.Activity)
-                .Select(ph => new HealthRiskDto
-                {
-                    Id = ph.HealthRiskId,
-                    Name = ph.HealthRisk.LanguageContents
-                        .Where(lc => lc.ContentLanguage.Id == ph.Project.NationalSociety.ContentLanguage.Id)
-                        .Select(lc => lc.Name)
-                        .FirstOrDefault()
-                })
-                .Distinct()
-                .OrderBy(x => x.Name)
-                .ToListAsync();
+            // Oponeo: Get ProjectHealthRisks
+            // By nationalSocietyId of the Project
+            // Apply a filter that checks if excludeActivity is false or HealthRiskType of ProjectHealthRisks is HealthRiskType.Activity
+            // Select a new object of type HealthRiskDto with the following properties:
+            //      Id set to HealthRiskId
+            //      Name set to:
+            //          From the HealthRisk's LanguageContents where ContentLanguage.Id equals Project.NationalSociety.ContentLanguage.Id
+            //          Select Name
+            //          Get the first row or null
+            // Remove duplicated rows (use Distinct() method)
+            // Order by Name
+            // List the query
+            new List<HealthRiskDto>();
 
         public async Task<Result> Reopen(int nationalSocietyId)
         {
-            var nationalSociety = await _nyssContext.NationalSocieties.FindAsync(nationalSocietyId);
+            // Oponeo: Find NationalSocieties by id
+            NationalSociety nationalSociety = null;
+
             if (nationalSociety == null)
             {
                 return Error(ResultKey.NationalSociety.NotFound);
             }
 
-            nationalSociety.IsArchived = false;
-            await _nyssContext.SaveChangesAsync();
+            // Oponeo: Set IsArchived flag to false and save changes
+
             return SuccessMessage(ResultKey.NationalSociety.Archive.ReopenSuccess);
         }
 
         public async Task<ContentLanguage> GetLanguageById(int id) =>
-            await _nyssContext.ContentLanguages.FindAsync(id);
+            // Oponeo: Find ContentLanguages by id
+            null;
 
         public async Task<Country> GetCountryById(int id) =>
-            await _nyssContext.Countries.FindAsync(id);
+            // Oponeo: Find Country by id
+            null;
 
         private IQueryable<NationalSociety> GetNationalSocietiesQuery()
         {
@@ -218,8 +207,8 @@ namespace RX.Nyss.Web.Features.NationalSocieties
 
             var userName = _authorizationService.GetCurrentUserName();
 
-            return _nyssContext.NationalSocieties
-                .Where(ns => ns.NationalSocietyUsers.Any(u => u.User.EmailAddress == userName));
+            // Oponeo: return NationalSocieties that have any NationalSocietyUser with User EmailAddress equal to userName
+            return Enumerable.Empty<NationalSociety>().AsQueryable();
         }
     }
 }
