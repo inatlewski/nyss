@@ -36,54 +36,39 @@ namespace RX.Nyss.Web.Features.HealthRisks
         {
             var userName = _authorizationService.GetCurrentUserName();
 
-            var languageCode = await _nyssContext.Users.FilterAvailable()
-                .Where(u => u.EmailAddress == userName)
-                .Select(u => u.ApplicationLanguage.LanguageCode)
-                .SingleOrDefaultAsync() ?? "en";
+            // Oponeo: Get a languageCode for current user.
+            // Apply Users.FilterAvailable()
+            // Filter by user's EmailAddress
+            // Select LanguageCode available in ApplicationLanguage
+            // Get single value with a fallback to "en"
+            var languageCode = "";
 
-            var healthRisks = await _nyssContext.HealthRisks
-                .Select(hr => new HealthRiskListItemResponseDto
-                {
-                    Id = hr.Id,
-                    HealthRiskCode = hr.HealthRiskCode,
-                    HealthRiskType = hr.HealthRiskType,
-                    Name = hr.LanguageContents
-                        .Where(lc => lc.ContentLanguage.LanguageCode == languageCode)
-                        .Select(lc => lc.Name)
-                        .FirstOrDefault()
-                })
-                .OrderBy(hr => hr.HealthRiskCode)
-                .ToListAsync();
+            // Oponeo: Get HealthRisks
+            // Select information needed to return HealthRiskListItemResponseDto
+            // In the dto, return Name as:
+            //     Health risk LanguageContents filtered by ContentLanguage.LanguageCode equals languageCode
+            //     Select Name
+            //     Get first value
+            // Order by HealthRiskCode
+            var healthRisks = new List<HealthRiskListItemResponseDto>();
 
             return Success<IEnumerable<HealthRiskListItemResponseDto>>(healthRisks);
         }
 
         public async Task<Result<HealthRiskResponseDto>> Get(int id)
         {
-            var healthRiskResponse = await _nyssContext.HealthRisks
-                .Where(healthRisk => healthRisk.Id == id)
-                .Select(healthRisk => new HealthRiskResponseDto
-                {
-                    Id = healthRisk.Id,
-                    HealthRiskCode = healthRisk.HealthRiskCode,
-                    HealthRiskType = healthRisk.HealthRiskType,
-                    AlertRuleCountThreshold = healthRisk.AlertRule != null
-                        ? healthRisk.AlertRule.CountThreshold
-                        : (int?)null,
-                    AlertRuleDaysThreshold = healthRisk.AlertRule != null
-                        ? healthRisk.AlertRule.DaysThreshold
-                        : null,
-                    AlertRuleKilometersThreshold = healthRisk.AlertRule != null
-                        ? healthRisk.AlertRule.KilometersThreshold
-                        : null,
-                    LanguageContent = healthRisk.LanguageContents.Select(lc => new HealthRiskLanguageContentDto
-                    {
-                        LanguageId = lc.ContentLanguage.Id,
-                        CaseDefinition = lc.CaseDefinition,
-                        FeedbackMessage = lc.FeedbackMessage,
-                        Name = lc.Name
-                    })
-                }).SingleOrDefaultAsync();
+            // Oponeo: Get HealthRisks
+            // Filter by id
+            // Select a new object of type HealthRiskResponseDto with the following properties:
+            //      Id, HealthRiskCode, HealthRiskType
+            //      AlertRuleCountThreshold - healthRisk.AlertRule.CountThreshold if healthRisk.AlertRule is not null. Otherwise (int?)null.
+            //      AlertRuleDaysThreshold - healthRisk.AlertRule.DaysThreshold if healthRisk.AlertRule is not null. Otherwise null.
+            //      AlertRuleKilometersThreshold - healthRisk.AlertRule.KilometersThreshold if healthRisk.AlertRule is not null. Otherwise null.
+            //      LanguageContent - from healthRisk.LanguageContents select a new object of type HealthRiskLanguageContentDto with the following properties:
+            //          LanguageId - ContentLanguageId
+            //          CaseDefinition, FeedbackMessage, Name
+            // Make sure the database returned zero or one row
+            HealthRiskResponseDto healthRiskResponse = null;
 
             if (healthRiskResponse == null)
             {
@@ -95,13 +80,17 @@ namespace RX.Nyss.Web.Features.HealthRisks
 
         public async Task<Result> Create(HealthRiskRequestDto healthRiskRequestDto)
         {
-            if (await _nyssContext.HealthRisks.AnyAsync(hr => hr.HealthRiskCode == healthRiskRequestDto.HealthRiskCode))
+            // Oponeo: Make sure there is no HealthRisk with HealthRiskCode provided in the dto
+            if (false)
             {
                 return Error(ResultKey.HealthRisk.HealthRiskNumberAlreadyExists);
             }
 
             var languageContentIds = healthRiskRequestDto.LanguageContent.Select(lc => lc.LanguageId).ToArray();
-            var contentLanguages = await _nyssContext.ContentLanguages.Where(cl => languageContentIds.Contains(cl.Id)).ToDictionaryAsync(cl => cl.Id, cl => cl);
+
+            // Oponeo: Get ContentLanguages filtered by id available in languageContentIds (use Contains() method)
+            // Convert to dictionary (use ToDictionaryAsync() method, key = Id, value = Content Language)
+            var contentLanguages = new Dictionary<int, ContentLanguage>();
 
             var healthRisk = new HealthRisk
             {
@@ -124,45 +113,41 @@ namespace RX.Nyss.Web.Features.HealthRisks
                     : null
             };
 
-            await _nyssContext.AddAsync(healthRisk);
-            await _nyssContext.SaveChangesAsync();
+            // Oponeo: Add healthRisk and save changes
 
             return SuccessMessage(ResultKey.HealthRisk.Create.CreationSuccess);
         }
 
         public async Task<Result> Edit(int id, HealthRiskRequestDto healthRiskRequestDto)
         {
-            var healthRisk = await _nyssContext.HealthRisks
-                .Include(hr => hr.AlertRule)
-                .Include(hr => hr.LanguageContents)
-                .ThenInclude(lc => lc.ContentLanguage)
-                .SingleOrDefaultAsync(hr => hr.Id == id);
+            // Oponeo: find a health risk to edit base on id
+            // Include AlertRule and LanguageContents and LanguageContents.ContentLanguage (use ThenInclude())
+            // Make sure the database returned zero or one health risk
+            HealthRisk healthRisk = null;
 
             if (healthRisk == null)
             {
                 return Error(ResultKey.HealthRisk.HealthRiskNotFound);
             }
 
-            if (await _nyssContext.HealthRisks.AnyAsync(hr => hr.Id != id && hr.HealthRiskCode == healthRiskRequestDto.HealthRiskCode))
+            // Oponeo: in the database, try to find a health risk with the same HealthRiskCode and with different id that provided as a parameter (use AnyAsync())
+            if (false)
             {
                 return Error(ResultKey.HealthRisk.HealthRiskNumberAlreadyExists);
             }
 
-            healthRisk.HealthRiskCode = healthRiskRequestDto.HealthRiskCode;
-            healthRisk.HealthRiskType = healthRiskRequestDto.HealthRiskType;
+            // Oponeo: update values of HealthRiskCode and HealthRiskType base on information from DTO
 
             if (healthRiskRequestDto.AlertRuleCountThreshold.HasValue)
             {
-                healthRisk.AlertRule ??= new AlertRule();
-                healthRisk.AlertRule.CountThreshold = healthRiskRequestDto.AlertRuleCountThreshold.Value;
-                healthRisk.AlertRule.DaysThreshold = healthRiskRequestDto.AlertRuleDaysThreshold;
-                healthRisk.AlertRule.KilometersThreshold = healthRiskRequestDto.AlertRuleKilometersThreshold;
+                // Oponeo: Create a new object healthRisk.AlertRule
+                // Set values of CountThreshold, DaysThreshold and KilometersThreshold
             }
             else
             {
                 if (healthRisk.AlertRule != null)
                 {
-                    _nyssContext.AlertRules.Remove(healthRisk.AlertRule);
+                    // Oponeo: Remove healthRisk.AlertRule from AlertRules table
                 }
 
                 healthRisk.AlertRule = null;
@@ -173,28 +158,27 @@ namespace RX.Nyss.Web.Features.HealthRisks
                 var languageContent = healthRisk.LanguageContents.SingleOrDefault(lc => lc.ContentLanguage?.Id == languageContentDto.LanguageId)
                     ?? CreateNewLanguageContent(healthRisk, languageContentDto.LanguageId);
 
-                languageContent.FeedbackMessage = languageContentDto.FeedbackMessage;
-                languageContent.CaseDefinition = languageContentDto.CaseDefinition;
-                languageContent.Name = languageContentDto.Name;
+                // Oponeo: update FeedbackMessage, CaseDefinition, and Name of languageContent, base on information from DTO
             }
 
-            await _nyssContext.SaveChangesAsync();
+            // Oponeo: Save changes
 
             return SuccessMessage(ResultKey.HealthRisk.Edit.EditSuccess);
         }
 
         public async Task<Result> Delete(int id)
         {
-            var healthRisk = await _nyssContext.HealthRisks
-                .Include(hr => hr.AlertRule)
-                .Include(hr => hr.LanguageContents)
-                .SingleOrDefaultAsync(hr => hr.Id == id);
+            // Oponeo: find a health risk to be deleted base on id
+            // Include AlertRule and LanguageContents
+            // Make sure there is only one health risk with such id
+            HealthRisk healthRisk = null;
 
             if (healthRisk == null)
             {
                 return Error(ResultKey.HealthRisk.HealthRiskNotFound);
             }
 
+            // Oponeo: fix HealthRiskContainsReports() method
             if (await HealthRiskContainsReports(id))
             {
                 return Error(ResultKey.HealthRisk.HealthRiskContainsReports);
@@ -202,11 +186,10 @@ namespace RX.Nyss.Web.Features.HealthRisks
 
             if (healthRisk.AlertRule != null)
             {
-                _nyssContext.AlertRules.Remove(healthRisk.AlertRule);
+                // Oponeo: remove healthRisk.AlertRule from AlertRules table
             }
 
-            _nyssContext.HealthRisks.Remove(healthRisk);
-            await _nyssContext.SaveChangesAsync();
+            // Oponeo: remove healthRisk from HealthRisks table and save changes
 
             return SuccessMessage(ResultKey.HealthRisk.Remove.RemoveSuccess);
         }
@@ -219,7 +202,8 @@ namespace RX.Nyss.Web.Features.HealthRisks
                 lcDto.Name != healthRisk.LanguageContents.Single(lc => lc.ContentLanguage.Id == lcDto.LanguageId).Name);
 
         private async Task<bool> HealthRiskContainsReports(int healthRiskId) =>
-            await _nyssContext.ProjectHealthRisks.AnyAsync(phr => phr.HealthRiskId == healthRiskId && phr.Reports.Any(r => !r.IsTraining));
+            // Oponeo: in the database, check if there is any ProjectHealthRisk with such healthRiskId and with any Report which is not a training report
+            false;
 
         private HealthRiskLanguageContent CreateNewLanguageContent(HealthRisk healthRisk, int languageId)
         {
